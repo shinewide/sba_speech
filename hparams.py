@@ -2,6 +2,9 @@
 
 class hparams:
 
+    # text Parameters
+    cleaner_names = ['english_cleaners']
+
     # Audio Parameters
     sampling_rate = 22050
     filter_length = 1024
@@ -10,3 +13,18 @@ class hparams:
     n_mel_channels = 80
     mel_fmin = 0.0
     mel_fmax = 8000.0
+
+    # Model Parameters
+
+    # decoder parameters
+    n_frames_per_step = 3
+
+
+
+
+
+
+
+
+
+
