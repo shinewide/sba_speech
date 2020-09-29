@@ -2,14 +2,19 @@ import torch
 import numpy as np
 from scipy.signal import get_window
 import librosa.util as librosa_util
+import librosa
+from hparams import hparams as hps
 
+def load_wav_torch(wav_path):
+    wav, sr = librosa.core.load(wav_path, sr=hps.sampling_rate)
+    wav = wav.astype(np.float32)
+    # norm wav
+    wav = wav / np.max(np.abs(wav))
+    wav = torch.from_numpy(wav).float()
+    return wav
 
 def dynamic_range_compression(mel_spectrogram, C=1, min_clip_val=1e-5):
-    print('input', mel_spectrogram.size(), torch.min(mel_spectrogram))
     clamp = torch.clamp(mel_spectrogram, min=min_clip_val)
-    print('clamp', clamp.size(), torch.min(clamp))
     clamp_factor = clamp * C
-    print('clamp_factor', clamp_factor.size(), torch.min(clamp_factor))
     log_mel_spectrogram = torch.log(clamp_factor)
-    print('log_mel_spectrogram', log_mel_spectrogram.size(), torch.min(log_mel_spectrogram))
     return log_mel_spectrogram
