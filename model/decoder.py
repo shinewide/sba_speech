@@ -21,6 +21,19 @@ class Decoder(nn.Module):
 
         self.prenet = Prenet()
 
+        # attention rnn input dim : 256 + 512
+        # self.attention_rnn = nn.LSTMCell(hps.prenet_output_dim + hps.encoder_embedding_dim,
+        #                                  hps.attention_rnn_dim)
+
+        # decoder rnn input : 256 + 512 = 768
+        # decoder rnn output : 1024
+        self.decoder_rnn = nn.LSTMCell(hps.prenet_output_dim + hps.encoder_embedding_dim,
+                                        hps.decoder_rnn_dim, 1)
+
+        self.linear_projection = LinearNorm(hps.decoder_rnn_dim,
+                                            hps.n_mel_channels * hps.n_frames_per_step)
+
+
     def get_go_frame(self, memory):
         batch_size = memory.size(0)
         go_frames = Variable(
@@ -59,6 +72,21 @@ class Decoder(nn.Module):
         # self.processed_memory = self.attention_layer.memory_layer(memory)
         self.mask = mask
 
+    def decode(self, decoder_input):
+        print('decoder input : ', decoder_input.size())
+
+        decoder_cell_input = torch.cat((decoder_input, self.memory), -1)
+        print('cell input size : ', decoder_cell_input.size())
+
+        self.decoder_cell, self.decoder_hidden = self.decoder_rnn(decoder_cell_input,
+                                                                  (self.decoder_hidden, self.decoder_cell))
+
+        decoder_output = self.linear_projection(self.decoder_cell)
+        print('decoder output : ', decoder_output.size())
+
+        return decoder_output, None
+
+
     def forward(self, memory, decoder_inputs, memory_lengths):
         # memory : (B, Seq_len, 512) --> encoder outputs
         # decoder_inputs : (B, Mel_Channels : 80, frames)
@@ -74,6 +102,29 @@ class Decoder(nn.Module):
 
         self.initailze_decoder_states(memory,
                                       mask=~get_mask_from_lengths(memory_lengths))
+
+        mel_outputs, alignments = [], []
+
+        while len(mel_outputs) < decoder_inputs.size(0) - 1:
+            decoder_input = decoder_inputs[len(mel_outputs)]
+            mel_output, attention_weights = self.decode(decoder_input)
+            # mel_output : (1, B, 240)
+            mel_outputs.append(mel_output)
+            break
+
+        print('decoder prediction : ', len(mel_outputs))
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 if __name__ == '__main__':
