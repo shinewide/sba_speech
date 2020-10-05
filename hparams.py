@@ -23,6 +23,7 @@ class hparams:
     encoder_kernel_size = 5
     encoder_embedding_dim = 512
     encoder_n_convolutions = 3
+    encoder_dropout_p = 0.5
 
     # decoder parameters
     n_frames_per_step = 3

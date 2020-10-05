@@ -20,7 +20,14 @@ class ConvNorm(nn.Module):
         output = self.conv(input)
         return output
 
+if __name__ == '__main__':
+    L_in = 14
+    kernel_size = 5
+    dilation = 1
+    stride = 1
 
+    # L_out = (L_in + 2 * padding - dilation * (kernel_size - 1) - 1) / stride + 1
+    L_out = (L_in + -1 + 1)
 
 
 

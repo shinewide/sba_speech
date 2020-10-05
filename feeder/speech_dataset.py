@@ -97,7 +97,7 @@ class SpeechCollate:
             gate_padded[i, mel.size(1) - 1:] = 1
             output_lengths[i] = mel.size(1)
 
-        print(gate_padded)
+        # print(gate_padded)
         return mel_padded, output_lengths, text_padded, input_lengths
 
 

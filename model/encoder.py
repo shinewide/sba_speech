@@ -21,14 +21,42 @@ class Encoder(nn.Module):
 
         self.convolutions = nn.ModuleList(convolutions)
 
-    def forward(self, inputs):
+        self.lstm = nn.LSTM(hps.encoder_embedding_dim,
+                            int(hps.encoder_embedding_dim / 2), num_layers=1,
+                            batch_first=True, bidirectional=True)
+
+    def forward(self, inputs, input_lengths):
         x = inputs
         # input : char embedding
-        # conv1d -> batchnorm1d -> conv1d -> batchnorm1d -> conv1d -> batchnorm1d
+        # (conv1d -> batchnorm1d -> relu -> drop out) * 3
         for conv in self.convolutions:
-            x = F.dropout(F.relu(conv(x)), 0.5, self.training)
+            x = F.dropout(F.relu(conv(x)), hps.encoder_dropout_p, self.training)
             print('encoder conv : ', x.size())
 
-        # x = conv_1(inputs)
-        # x = conv_2(x)
-        # x = conv_3(x)
+        x = x.transpose(1, 2)
+        print('encoder lstm input : ', x.size())
+
+        input_lengths = input_lengths.cpu().numpy()
+        x = nn.utils.rnn.pack_padded_sequence(x, input_lengths, batch_first=True)
+
+        self.lstm.flatten_parameters()
+        x, _ = self.lstm(x)
+
+        x, _ = nn.utils.rnn.pad_packed_sequence(x, batch_first=True)
+
+        print('lstm output : ', x.size())
+
+        return x
+
+
+
+
+
+
+
+
+
+
+
+
+

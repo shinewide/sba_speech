@@ -15,7 +15,7 @@ class Tacotron2(nn.Module):
         self.encoder = Encoder()
 
     def forward(self, inputs):
-        text_inputs = inputs
+        text_inputs, input_lengths = inputs
 
         print('input text size : ', text_inputs.size())
         character_embedding = self.embedding(text_inputs)
@@ -25,23 +25,25 @@ class Tacotron2(nn.Module):
         character_embedding = character_embedding.transpose(1, 2)
         print('character embedding size : ', character_embedding.size())
 
-        encoder_outputs = self.encoder(character_embedding)
+        encoder_outputs = self.encoder(character_embedding, input_lengths)
+        # print('encoder output size : ', encoder_outputs.size())
 
 
 if __name__ == '__main__':
-    text = 'hello tacotron'
+    from feeder.speech_dataset import SpeechDataset, SpeechCollate
+    dataset = SpeechDataset('../data/lj')
+    collate_fn = SpeechCollate()
 
-    from text import text_to_sequence
-    t2s = text_to_sequence(text, ['english_cleaners'])
-    t2s = torch.IntTensor(t2s)
-    t2s = t2s.unsqueeze(0)
+    from torch.utils.data import DataLoader
+
+    dataloader = DataLoader(dataset, num_workers=0, shuffle=True,
+                            batch_size=5, drop_last=True,
+                            collate_fn=collate_fn)
 
     model = Tacotron2()
-    model.eval()
-    print(model.training)
-    model.train()
-    print(model.training)
-    # model(t2s.long())
+    for batch in dataloader:
+        mel_padded, output_lengths, text_padded, input_lengths = batch
+        model((text_padded.long(), input_lengths.long()))
 
 
 
