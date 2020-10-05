@@ -1,6 +1,17 @@
 import torch
 from torch import nn
 
+
+class LinearNorm(nn.Module):
+    def __init__(self, in_dim, output_dim, bias=True, w_init_gain='linear'):
+        super(LinearNorm, self).__init__()
+
+        self.linear_layer = nn.Linear(in_dim, output_dim, bias=bias)
+
+    def forward(self, inputs):
+        return self.linear_layer(inputs)
+
+
 class ConvNorm(nn.Module):
     def __init__(self, in_channels, out_channels,
                  kernel_size=1, stride=1, padding=None, dilation=1,
@@ -20,18 +31,18 @@ class ConvNorm(nn.Module):
         output = self.conv(input)
         return output
 
+
 if __name__ == '__main__':
-    L_in = 14
-    kernel_size = 5
-    dilation = 1
-    stride = 1
+    random_tensor = torch.randn((2, 5, 5))
 
-    # L_out = (L_in + 2 * padding - dilation * (kernel_size - 1) - 1) / stride + 1
-    L_out = (L_in + -1 + 1)
+    input_dim = 5
+    output_dim = 3
 
+    linear = LinearNorm(input_dim, output_dim)
 
-
-
+    print(random_tensor.size())
+    linear_vector = linear(random_tensor)
+    print(linear_vector.size())
 
 
 

@@ -28,6 +28,25 @@ class hparams:
     # decoder parameters
     n_frames_per_step = 3
 
+    # prenet parameters
+    prenet_input_dim = n_mel_channels * n_frames_per_step
+    prenet_out_sizes = [256, 256]
+    prenet_dropout_p = 0.5
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

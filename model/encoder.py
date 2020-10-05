@@ -31,10 +31,10 @@ class Encoder(nn.Module):
         # (conv1d -> batchnorm1d -> relu -> drop out) * 3
         for conv in self.convolutions:
             x = F.dropout(F.relu(conv(x)), hps.encoder_dropout_p, self.training)
-            print('encoder conv : ', x.size())
+            # print('encoder conv : ', x.size())
 
         x = x.transpose(1, 2)
-        print('encoder lstm input : ', x.size())
+        # print('encoder lstm input : ', x.size())
 
         input_lengths = input_lengths.cpu().numpy()
         x = nn.utils.rnn.pack_padded_sequence(x, input_lengths, batch_first=True)
@@ -44,7 +44,7 @@ class Encoder(nn.Module):
 
         x, _ = nn.utils.rnn.pad_packed_sequence(x, batch_first=True)
 
-        print('lstm output : ', x.size())
+        # print('lstm output : ', x.size())
 
         return x
 
