@@ -9,6 +9,7 @@ random.seed(0)
 torch.manual_seed(0)
 torch.cuda.manual_seed(0)
 
+
 def load_metadata(fdir):
     traindata_dir = os.path.join(fdir, 'traindata_%d' % hps.sampling_rate)
     mel_dir = os.path.join(traindata_dir, 'mels')
@@ -26,12 +27,6 @@ def load_metadata(fdir):
             metadata.append([mel_filepath, trainscript])
 
     return metadata
-
-
-
-
-
-
 
 
 class SpeechDataset(Dataset):
@@ -60,6 +55,7 @@ class SpeechDataset(Dataset):
 
     def __len__(self):
         return len(self.metadata)
+
 
 class SpeechCollate:
     def __init__(self):
@@ -90,31 +86,35 @@ class SpeechCollate:
 
         mel_padded = torch.FloatTensor(len(batch), num_mels, max_target_len)
         mel_padded.zero_()
+        gate_padded = torch.FloatTensor(len(batch), max_target_len)
+        gate_padded.zero_()
+        output_lengths = torch.LongTensor(len(batch))
+        output_lengths.zero_()
 
         for i in range(len(ids_sorted_decreasing)):
             mel = batch[ids_sorted_decreasing[i]][0]
             mel_padded[i, :, :mel.size(1)] = mel
+            gate_padded[i, mel.size(1) - 1:] = 1
+            output_lengths[i] = mel.size(1)
 
-        return mel_padded, text_padded
+        print(gate_padded)
+        return mel_padded, output_lengths, text_padded, input_lengths
+
 
 if __name__ == '__main__':
     dataset = SpeechDataset('../data/lj')
     collate_fn = SpeechCollate()
 
     from torch.utils.data import DataLoader
+
     dataloader = DataLoader(dataset, num_workers=0, shuffle=True,
                             batch_size=2, drop_last=True,
                             collate_fn=collate_fn)
     from tqdm import tqdm
+
     for batch in tqdm(dataloader):
         for data in batch:
             print(data[0].size(), data[1].size())
+            break
 
         print()
-
-
-
-
-
-
-

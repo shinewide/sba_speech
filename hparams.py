@@ -1,4 +1,4 @@
-
+from text import symbols
 
 class hparams:
 
@@ -15,6 +15,14 @@ class hparams:
     mel_fmax = 8000.0
 
     # Model Parameters
+    # embedding parameters
+    n_symbols = len(symbols)
+    character_embedding_dim = 512
+
+    # encoder parameters
+    encoder_kernel_size = 5
+    encoder_embedding_dim = 512
+    encoder_n_convolutions = 3
 
     # decoder parameters
     n_frames_per_step = 3
