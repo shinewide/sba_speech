@@ -6,6 +6,8 @@ from torch.autograd import Variable
 from model.layers import ConvNorm, LinearNorm
 from model.modules import Prenet
 from hparams import hparams as hps
+from utils import get_mask_from_lengths
+
 
 class Decoder(nn.Module):
     def __init__(self):
@@ -13,6 +15,9 @@ class Decoder(nn.Module):
 
         self.n_frames_per_step = hps.n_frames_per_step
         self.n_mel_channels = hps.n_mel_channels
+        self.encoder_embedding_dim = hps.encoder_embedding_dim
+        self.attention_rnn_dim = hps.attention_rnn_dim
+        self.decoder_rnn_dim = hps.decoder_rnn_dim
 
         self.prenet = Prenet()
 
@@ -36,6 +41,24 @@ class Decoder(nn.Module):
         # print('decoder input transpose : ', decoder_inputs.size())
         return decoder_inputs
 
+    def initailze_decoder_states(self, memory, mask):
+        batch_size = memory.size(0)
+        max_time = memory.size(1)
+
+        self.attention_hidden = Variable(memory.data.new(batch_size, self.attention_rnn_dim).zero_())
+        self.attention_cell = Variable(memory.data.new(batch_size, self.attention_rnn_dim).zero_())
+
+        self.decoder_hidden = Variable(memory.data.new(batch_size, self.decoder_rnn_dim).zero_())
+        self.decoder_cell = Variable(memory.data.new(batch_size, self.decoder_rnn_dim).zero_())
+
+        self.attention_weights = Variable(memory.data.new(batch_size, max_time).zero_())
+        self.attention_weights_cum = Variable(memory.data.new(batch_size, max_time).zero_())
+        self.attention_context = Variable(memory.data.new(batch_size, self.encoder_embedding_dim).zero_())
+
+        self.memory = memory
+        # self.processed_memory = self.attention_layer.memory_layer(memory)
+        self.mask = mask
+
     def forward(self, memory, decoder_inputs, memory_lengths):
         # memory : (B, Seq_len, 512) --> encoder outputs
         # decoder_inputs : (B, Mel_Channels : 80, frames)
@@ -49,9 +72,14 @@ class Decoder(nn.Module):
         print('decoder inputs : ', decoder_inputs.size())
         decoder_inputs = self.prenet(decoder_inputs)
 
+        self.initailze_decoder_states(memory,
+                                      mask=~get_mask_from_lengths(memory_lengths))
 
 
+if __name__ == '__main__':
+    input_lengths = torch.LongTensor([10, 5, 8])
 
+    mask = get_mask_from_lengths(input_lengths)
 
 
 

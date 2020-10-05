@@ -27,6 +27,10 @@ class hparams:
 
     # decoder parameters
     n_frames_per_step = 3
+    decoder_rnn_dim = 1024
+
+    # attention parameters
+    attention_rnn_dim = 1024
 
     # prenet parameters
     prenet_input_dim = n_mel_channels * n_frames_per_step
