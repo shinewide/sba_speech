@@ -27,11 +27,9 @@ class Decoder(nn.Module):
 
         # decoder rnn input : 256 + 512 = 768
         # decoder rnn output : 1024
-        self.decoder_rnn = nn.LSTMCell(hps.prenet_output_dim + hps.encoder_embedding_dim,
-                                        hps.decoder_rnn_dim, 1)
+        self.decoder_rnn = nn.LSTMCell(256 + 512, 1024, 1)
 
-        self.linear_projection = LinearNorm(hps.decoder_rnn_dim,
-                                            hps.n_mel_channels * hps.n_frames_per_step)
+        self.linear_projection = LinearNorm(1024, 80 * 3)
 
 
     def get_go_frame(self, memory):
@@ -54,6 +52,19 @@ class Decoder(nn.Module):
         # print('decoder input transpose : ', decoder_inputs.size())
         return decoder_inputs
 
+    def parse_decoder_outputs(self, mel_outputs):
+        # List[(B, 240) ....] -> (len(List) : 278, B, 240)
+        mel_outputs = torch.stack(mel_outputs)
+        print(mel_outputs.size())
+        mel_outputs = mel_outputs.transpose(0, 1).contiguous()
+        print(mel_outputs.size())
+        batch_size = mel_outputs.size(0)
+        mel_outputs = mel_outputs.view(batch_size, -1, 80)
+        print(mel_outputs.size())
+        mel_outputs = mel_outputs.transpose(1, 2)
+        print(mel_outputs.size())
+        return mel_outputs
+
     def initailze_decoder_states(self, memory, mask):
         batch_size = memory.size(0)
         max_time = memory.size(1)
@@ -68,21 +79,22 @@ class Decoder(nn.Module):
         self.attention_weights_cum = Variable(memory.data.new(batch_size, max_time).zero_())
         self.attention_context = Variable(memory.data.new(batch_size, self.encoder_embedding_dim).zero_())
 
+        # (B, 512)
         self.memory = memory
         # self.processed_memory = self.attention_layer.memory_layer(memory)
         self.mask = mask
 
     def decode(self, decoder_input):
-        print('decoder input : ', decoder_input.size())
+        # print('decoder input : ', decoder_input.size())
 
         decoder_cell_input = torch.cat((decoder_input, self.memory), -1)
-        print('cell input size : ', decoder_cell_input.size())
+        # print('cell input size : ', decoder_cell_input.size())
 
         self.decoder_cell, self.decoder_hidden = self.decoder_rnn(decoder_cell_input,
                                                                   (self.decoder_hidden, self.decoder_cell))
 
         decoder_output = self.linear_projection(self.decoder_cell)
-        print('decoder output : ', decoder_output.size())
+        # print('decoder output : ', decoder_output.size())
 
         return decoder_output, None
 
@@ -110,9 +122,28 @@ class Decoder(nn.Module):
             mel_output, attention_weights = self.decode(decoder_input)
             # mel_output : (1, B, 240)
             mel_outputs.append(mel_output)
-            break
 
         print('decoder prediction : ', len(mel_outputs))
+
+        mel_outputs = self.parse_decoder_outputs(mel_outputs)
+
+        return mel_outputs
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

@@ -45,10 +45,13 @@ class Encoder(nn.Module):
         x, _ = nn.utils.rnn.pad_packed_sequence(x, batch_first=True)
 
         # print('lstm output : ', x.size())
+        # hidden : (vec : hidden state, vec)
+        # hidden state : (2, B, LSTM_DIM : 256)
         hidden = hidden[0]
-        print(hidden.size())
+
         encoder_context = hidden.view(hidden.size(1), -1)
 
+        # x : (B, Seq_len, forward_dim + backward_dim)
         # return x
         return encoder_context
 
