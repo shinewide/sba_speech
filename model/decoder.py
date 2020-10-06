@@ -55,14 +55,14 @@ class Decoder(nn.Module):
     def parse_decoder_outputs(self, mel_outputs):
         # List[(B, 240) ....] -> (len(List) : 278, B, 240)
         mel_outputs = torch.stack(mel_outputs)
-        print(mel_outputs.size())
+        # print(mel_outputs.size())
         mel_outputs = mel_outputs.transpose(0, 1).contiguous()
-        print(mel_outputs.size())
+        # print(mel_outputs.size())
         batch_size = mel_outputs.size(0)
         mel_outputs = mel_outputs.view(batch_size, -1, 80)
-        print(mel_outputs.size())
+        # print(mel_outputs.size())
         mel_outputs = mel_outputs.transpose(1, 2)
-        print(mel_outputs.size())
+        # print(mel_outputs.size())
         return mel_outputs
 
     def initailze_decoder_states(self, memory, mask):
@@ -105,11 +105,11 @@ class Decoder(nn.Module):
         # memory lengths : (B)
 
         decoder_input = self.get_go_frame(memory).unsqueeze(0)
-        print('go frames : ', decoder_input.size())
-        print('decoder inputs : ', decoder_inputs.size())
+        # print('go frames : ', decoder_input.size())
+        # print('decoder inputs : ', decoder_inputs.size())
         decoder_inputs = self.parse_decoder_inputs(decoder_inputs)
         decoder_inputs = torch.cat((decoder_input, decoder_inputs), dim=0)
-        print('decoder inputs : ', decoder_inputs.size())
+        # print('decoder inputs : ', decoder_inputs.size())
         decoder_inputs = self.prenet(decoder_inputs)
 
         self.initailze_decoder_states(memory,
@@ -123,7 +123,7 @@ class Decoder(nn.Module):
             # mel_output : (1, B, 240)
             mel_outputs.append(mel_output)
 
-        print('decoder prediction : ', len(mel_outputs))
+        # print('decoder prediction : ', len(mel_outputs))
 
         mel_outputs = self.parse_decoder_outputs(mel_outputs)
 

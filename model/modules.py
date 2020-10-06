@@ -17,7 +17,7 @@ class Prenet(nn.Module):
     def forward(self, x):
         for linear in self.layers:
             x = F.dropout(F.relu(linear(x)), hps.prenet_dropout_p, self.training)
-            print('prenet linear size : ', x.size())
+            # print('prenet linear size : ', x.size())
 
         return x
 
