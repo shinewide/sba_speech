@@ -2,10 +2,18 @@ import torch
 from torch.utils.data import DataLoader
 from feeder.speech_dataset import SpeechDataset, SpeechCollate
 from model.tacotron2 import Tacotron2
+from model.loss import Tacotron2Loss
+from time import time
 
 def train(dataset_dir):
     # init Tacotron2
     model = Tacotron2()
+
+    # init loss fn
+    criterion = Tacotron2Loss()
+
+    # init optimizer
+    optimizer = torch.optim.Adam(model.parameters(), lr=0.05)
 
     # prepare data loader
     dataset = SpeechDataset(dataset_dir)
@@ -20,15 +28,24 @@ def train(dataset_dir):
     model.train()
 
     epoch = 0
-    max_epoch = 1
+    max_epoch = 100
     iteration = 1
 
     while epoch < max_epoch:
         for batch in dataloader:
+            stime = time()
             mel_padded, output_lengths, text_padded, input_lengths = batch
             mel_predict = model((text_padded.long(), input_lengths.long(), mel_padded.float(), output_lengths.long()))
 
-            print(mel_predict.size(), mel_padded.size())
+            loss, loss_item = criterion(mel_predict, mel_padded)
+
+            model.zero_grad()
+            loss.backward()
+            optimizer.step()
+
+            dur_time = time() - stime
+            print('epoch : {}, iteration : {}, loss : {:.8f}, time : {:.1f}s/it'.format(epoch + 1, iteration, loss_item, dur_time))
+
             iteration += 1
         epoch += 1
 
