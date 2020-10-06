@@ -2,7 +2,7 @@ import torch
 from torch import nn
 from torch.nn import functional as F
 from torch.autograd import Variable
-# from model.attention import Attention
+from model.attention import Attention
 from model.layers import ConvNorm, LinearNorm
 from model.modules import Prenet
 from hparams import hparams as hps
@@ -22,6 +22,8 @@ class Decoder(nn.Module):
         self.prenet = Prenet()
 
         self.attention_rnn = nn.LSTMCell(256 + 512, 1024)
+
+        self.attention_layer = Attention()
 
         # decoder rnn input : 256 + 512 = 768
         # decoder rnn output : 1024
@@ -77,9 +79,10 @@ class Decoder(nn.Module):
         self.attention_weights_cum = Variable(memory.data.new(batch_size, max_time).zero_())
         self.attention_context = Variable(memory.data.new(batch_size, self.encoder_embedding_dim).zero_())
 
-        # (B, 512)
+        # (B, Seq_len, 512)
         self.memory = memory
-        # self.processed_memory = self.attention_layer.memory_layer(memory)
+        # (B, Seq_len, 128)
+        self.processed_memory = self.attention_layer.memory_layer(memory)
         self.mask = mask
 
     def decode(self, decoder_input):
@@ -107,7 +110,10 @@ class Decoder(nn.Module):
         print('attention_weights : ', self.attention_weights.size())
         print('attention_weights_cum : ', self.attention_weights_cum.size())
 
-        # self.attention_context, self.attention_weights = self.attention_layer()
+        self.attention_context, self.attention_weights = self.attention_layer(
+            self.attention_hidden, self.memory, self.processed_memory,
+            attention_weights_cat, self.mask
+        )
 
         return None, None
 
