@@ -12,6 +12,9 @@ class Tacotron2(nn.Module):
         super(Tacotron2, self).__init__()
 
         self.embedding = nn.Embedding(hps.n_symbols, hps.character_embedding_dim)
+        std = sqrt(2.0 / (hps.n_symbols + hps.character_embedding_dim))
+        val = sqrt(3.0) * std
+        self.embedding.weight.data.uniform_(-val, val)
 
         self.encoder = Encoder()
         self.decoder = Decoder()
@@ -38,10 +41,10 @@ class Tacotron2(nn.Module):
         encoder_outputs = self.encoder(character_embedding, input_lengths)
         # print('encoder output size : ', encoder_outputs.size())
 
-        mel_outputs = self.decoder(encoder_outputs, mel_targets, input_lengths)
+        self.decoder(encoder_outputs, mel_targets, input_lengths)
 
-        mel_outputs = self.parse_outputs(mel_outputs, output_lengths)
-        return mel_outputs
+        # mel_outputs = self.parse_outputs(mel_outputs, output_lengths)
+        # return mel_outputs
 
 if __name__ == '__main__':
     from feeder.speech_dataset import SpeechDataset, SpeechCollate

@@ -11,7 +11,7 @@ class Prenet(nn.Module):
         out_sizes = hps.prenet_out_sizes
         in_sizes = [hps.prenet_input_dim] + out_sizes[:-1]
         self.layers = nn.ModuleList(
-            [LinearNorm(in_size, out_size, bias=False) for (in_size, out_size) in zip(in_sizes, out_sizes)]
+            [LinearNorm(in_size, out_size, bias=False, w_init_gain='relu') for (in_size, out_size) in zip(in_sizes, out_sizes)]
         )
 
     def forward(self, x):

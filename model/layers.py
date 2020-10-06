@@ -8,6 +8,11 @@ class LinearNorm(nn.Module):
 
         self.linear_layer = nn.Linear(in_dim, output_dim, bias=bias)
 
+        torch.nn.init.xavier_uniform_(
+            self.linear_layer.weight,
+            gain=torch.nn.init.calculate_gain(w_init_gain)
+        )
+
     def forward(self, inputs):
         return self.linear_layer(inputs)
 
@@ -26,6 +31,11 @@ class ConvNorm(nn.Module):
                               kernel_size=kernel_size, stride=stride,
                               padding=padding, dilation=dilation,
                               bias=bias)
+
+        torch.nn.init.xavier_uniform_(
+            self.conv.weight,
+            gain=torch.nn.init.calculate_gain(w_init_gain)
+        )
 
     def forward(self, input):
         output = self.conv(input)

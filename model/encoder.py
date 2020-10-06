@@ -15,7 +15,7 @@ class Encoder(nn.Module):
                          hps.encoder_embedding_dim,
                          kernel_size=hps.encoder_kernel_size,
                          stride=1, padding=int((hps.encoder_kernel_size - 1) / 2),
-                         dilation=1),
+                         dilation=1, w_init_gain='relu'),
                 nn.BatchNorm1d(hps.encoder_embedding_dim))
             convolutions.append(conv_layer)
 
@@ -40,20 +40,20 @@ class Encoder(nn.Module):
         x = nn.utils.rnn.pack_padded_sequence(x, input_lengths, batch_first=True)
 
         self.lstm.flatten_parameters()
-        x, hidden = self.lstm(x)
+        x, _ = self.lstm(x)
 
         x, _ = nn.utils.rnn.pad_packed_sequence(x, batch_first=True)
 
         # print('lstm output : ', x.size())
         # hidden : (vec : hidden state, vec)
         # hidden state : (2, B, LSTM_DIM : 256)
-        hidden = hidden[0]
-
-        encoder_context = hidden.view(hidden.size(1), -1)
+        # hidden = hidden[0]
+        #
+        # encoder_context = hidden.view(hidden.size(1), -1)
 
         # x : (B, Seq_len, forward_dim + backward_dim)
-        # return x
-        return encoder_context
+        return x
+        # return encoder_context
 
 
 

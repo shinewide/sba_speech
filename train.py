@@ -38,14 +38,23 @@ def train(dataset_dir, log_dir, load_path=None):
 
     # init optimizer
     optimizer = torch.optim.Adam(model.parameters(), lr=0.05)
-
     epoch = 0
     max_epoch = 100
     iteration = 1
-    save_iters = 2
+    save_iters = 100
 
     if load_path is not None:
         model, optimizer, iteration = load_model(load_path, model, optimizer)
+
+    # init lr scheduler
+    lr_lambda = lambda step: 4000 ** 0.5 * min((step + 1) * 4000 ** -1.5, (step + 1) ** -0.5)
+    if load_path is not None:
+        scheduler = torch.optim.lr_scheduler.LambdaLR(optimizer,
+                                                      lr_lambda=lr_lambda,
+                                                      last_epoch=iteration)
+    else:
+        scheduler = torch.optim.lr_scheduler.LambdaLR(optimizer,
+                                                      lr_lambda=lr_lambda)
 
     # prepare data loader
     dataset = SpeechDataset(dataset_dir)
@@ -71,10 +80,12 @@ def train(dataset_dir, log_dir, load_path=None):
             model.zero_grad()
             loss.backward()
             optimizer.step()
+            scheduler.step()
 
             dur_time = time() - stime
-            print('epoch : {}, iteration : {}, loss : {:.8f}, time : {:.1f}s/it'.format(epoch + 1, iteration, loss_item,
-                                                                                        dur_time))
+            lr = optimizer.param_groups[0]['lr']
+            print('epoch : {}, iteration : {}, loss : {:.8f}, time : {:.1f}s/it (lr : {})'.format(epoch + 1, iteration, loss_item,
+                                                                                        dur_time, lr))
 
             if iteration % save_iters == 0:
                 save_model(log_dir, model, optimizer, iteration)

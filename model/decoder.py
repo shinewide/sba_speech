@@ -21,9 +21,7 @@ class Decoder(nn.Module):
 
         self.prenet = Prenet()
 
-        # attention rnn input dim : 256 + 512
-        # self.attention_rnn = nn.LSTMCell(hps.prenet_output_dim + hps.encoder_embedding_dim,
-        #                                  hps.attention_rnn_dim)
+        self.attention_rnn = nn.LSTMCell(256 + 512, 1024)
 
         # decoder rnn input : 256 + 512 = 768
         # decoder rnn output : 1024
@@ -85,19 +83,33 @@ class Decoder(nn.Module):
         self.mask = mask
 
     def decode(self, decoder_input):
-        # print('decoder input : ', decoder_input.size())
+        # decoder input : (B, 256)
+        # attention context : (B, 512)
+        # attention cell input : (B, 256+512)
+        attention_cell_input = torch.cat((decoder_input, self.attention_context), dim=-1)
+        print('attention cell input : ', attention_cell_input.size())
+        # attention_hidden : (B, 1024)
+        # attention_cell : (B, 1024)
+        self.attention_hidden, self.attention_cell = self.attention_rnn(
+            attention_cell_input, (self.attention_hidden, self.attention_cell))
 
-        decoder_cell_input = torch.cat((decoder_input, self.memory), -1)
-        # print('cell input size : ', decoder_cell_input.size())
+        print('attention hidden, cell : ', self.attention_hidden.size(), self.attention_cell.size())
 
-        self.decoder_cell, self.decoder_hidden = self.decoder_rnn(decoder_cell_input,
-                                                                  (self.decoder_hidden, self.decoder_cell))
+        self.attention_hidden = F.dropout(self.attention_hidden, 0.1, self.training)
 
-        decoder_output = self.linear_projection(self.decoder_cell)
-        # print('decoder output : ', decoder_output.size())
+        attention_weights_cat = torch.cat(
+            (self.attention_weights.unsqueeze(1),
+             self.attention_weights_cum.unsqueeze(1)),
+            dim=1
+        )
 
-        return decoder_output, None
+        print('attention_weights_cat : ', attention_weights_cat.size())
+        print('attention_weights : ', self.attention_weights.size())
+        print('attention_weights_cum : ', self.attention_weights_cum.size())
 
+        # self.attention_context, self.attention_weights = self.attention_layer()
+
+        return None, None
 
     def forward(self, memory, decoder_inputs, memory_lengths):
         # memory : (B, Seq_len, 512) --> encoder outputs
@@ -122,12 +134,13 @@ class Decoder(nn.Module):
             mel_output, attention_weights = self.decode(decoder_input)
             # mel_output : (1, B, 240)
             mel_outputs.append(mel_output)
+            break
 
         # print('decoder prediction : ', len(mel_outputs))
 
-        mel_outputs = self.parse_decoder_outputs(mel_outputs)
+        # mel_outputs = self.parse_decoder_outputs(mel_outputs)
 
-        return mel_outputs
+        # return mel_outputs
 
 
 
