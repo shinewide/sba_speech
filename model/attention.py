@@ -19,10 +19,10 @@ class Attention(nn.Module):
     def get_alignment_energies(self, query, processed_memory, attention_weights_cat):
         # (B, 1024) -> (B, 128)
         processed_query = self.query_layer(query.unsqueeze(1))
-        print('processed_query : ', processed_query.size())
-        print('processed_memory : ', processed_memory.size())
+        # print('processed_query : ', processed_query.size())
+        # print('processed_memory : ', processed_memory.size())
         energies = self.v(torch.tanh(processed_query + processed_memory))
-        print('energies : ', energies.size())
+        # print('energies : ', energies.size())
         return energies.squeeze(2)
 
     def forward(self, attention_hidden_state, memory, proccessed_memory,
@@ -30,15 +30,21 @@ class Attention(nn.Module):
         alignment = self.get_alignment_energies(attention_hidden_state,
                                                 proccessed_memory,
                                                 attention_weights_cat)
-        print('alignment : ', alignment.size())
+        # alignment : (B, Seq_Len : 90)
+        # print('alignment : ', alignment.size())
 
         if mask is not None:
             alignment.data.masked_fill_(mask, self.score_mask_value)
 
         attention_weights = F.softmax(alignment, dim=1)
+        # attention weights : (B, 151) [0.9, 0.1 ......]
+        # memory : (B, 151, 512) 512 * 0.9
+        # print('memory : ', memory.size())
+        # att_W * memory => (1, 151) * (151, 512) -> (1, 512)
         attention_context = torch.bmm(attention_weights.unsqueeze(1), memory)
+        # print('attention_context : ', attention_context.size())
         attention_context = attention_context.squeeze(1)
-        print('attention_context : ', attention_context.size())
+        # print('attention_context : ', attention_context.size())
 
         return attention_context, attention_weights
 

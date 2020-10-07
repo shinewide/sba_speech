@@ -27,9 +27,9 @@ class Decoder(nn.Module):
 
         # decoder rnn input : 256 + 512 = 768
         # decoder rnn output : 1024
-        self.decoder_rnn = nn.LSTMCell(256 + 512, 1024, 1)
+        self.decoder_rnn = nn.LSTMCell(1024 + 512, 1024, 1)
 
-        self.linear_projection = LinearNorm(1024, 80 * 3)
+        self.linear_projection = LinearNorm(1024 + 512, 80 * 3)
 
 
     def get_go_frame(self, memory):
@@ -90,13 +90,13 @@ class Decoder(nn.Module):
         # attention context : (B, 512)
         # attention cell input : (B, 256+512)
         attention_cell_input = torch.cat((decoder_input, self.attention_context), dim=-1)
-        print('attention cell input : ', attention_cell_input.size())
+        # print('attention cell input : ', attention_cell_input.size())
         # attention_hidden : (B, 1024)
         # attention_cell : (B, 1024)
         self.attention_hidden, self.attention_cell = self.attention_rnn(
             attention_cell_input, (self.attention_hidden, self.attention_cell))
 
-        print('attention hidden, cell : ', self.attention_hidden.size(), self.attention_cell.size())
+        # print('attention hidden, cell : ', self.attention_hidden.size(), self.attention_cell.size())
 
         self.attention_hidden = F.dropout(self.attention_hidden, 0.1, self.training)
 
@@ -106,16 +106,44 @@ class Decoder(nn.Module):
             dim=1
         )
 
-        print('attention_weights_cat : ', attention_weights_cat.size())
-        print('attention_weights : ', self.attention_weights.size())
-        print('attention_weights_cum : ', self.attention_weights_cum.size())
+        # print('attention_weights_cat : ', attention_weights_cat.size())
+        # print('attention_weights : ', self.attention_weights.size())
+        # print('attention_weights_cum : ', self.attention_weights_cum.size())
 
         self.attention_context, self.attention_weights = self.attention_layer(
             self.attention_hidden, self.memory, self.processed_memory,
             attention_weights_cat, self.mask
         )
 
-        return None, None
+        self.attention_weights_cum += self.attention_weights
+
+        # (B, 1024 + 512)
+        decoder_input = torch.cat(
+            (self.attention_hidden, self.attention_context), dim=-1
+        )
+
+        # print('decoder input : ', decoder_input.size())
+
+        # decoder hidden : (B, 1024)
+        # decoder cell : (B, 1024)
+        self.decoder_hidden, self.decoder_cell = self.decoder_rnn(
+            decoder_input, (self.decoder_hidden, self.decoder_cell)
+        )
+
+        # print('decoder hidden : ', self.decoder_hidden.size())
+        # print('decoder cell : ', self.decoder_cell.size())
+
+        self.decoder_hidden = F.dropout(self.decoder_hidden, 0.1, self.training)
+
+        # (B, 1024 + 512)
+        decoder_hidden_attention_context = torch.cat(
+            (self.decoder_hidden, self.attention_context), dim=1
+        )
+        # print('dh ac : ', decoder_hidden_attention_context.size())
+
+        decoder_output = self.linear_projection(decoder_hidden_attention_context)
+
+        return decoder_output, self.attention_weights
 
     def forward(self, memory, decoder_inputs, memory_lengths):
         # memory : (B, Seq_len, 512) --> encoder outputs
