@@ -41,7 +41,7 @@ def train(dataset_dir, log_dir, load_path=None):
     epoch = 0
     max_epoch = 1
     iteration = 1
-    save_iters = 100
+    save_iters = 1
 
     if load_path is not None:
         model, optimizer, iteration = load_model(load_path, model, optimizer)
@@ -91,8 +91,9 @@ def train(dataset_dir, log_dir, load_path=None):
                 save_model(log_dir, model, optimizer, iteration)
                 mel_output = mel_predict[0].detach().numpy().astype(np.float32)
                 mel_target = mel_padded[0].detach().numpy().astype(np.float32)
+                alignment = alignments[0].detach().numpy().astype(np.float32).T
                 png_path = os.path.join(log_dir, 'mel_{}.png'.format(iteration))
-                save_png((mel_output, mel_target), png_path)
+                save_png((mel_output, mel_target, alignment), png_path)
 
             iteration += 1
         epoch += 1
