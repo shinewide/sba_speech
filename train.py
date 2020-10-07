@@ -72,10 +72,10 @@ def train(dataset_dir, log_dir, load_path=None):
 
         for batch in dataloader:
             stime = time()
-            mel_padded, output_lengths, text_padded, input_lengths = batch
-            mel_predict, mel_post_predict, alignments = model((text_padded.long(), input_lengths.long(), mel_padded.float(), output_lengths.long()))
+            mel_padded, output_lengths, text_padded, input_lengths, gate_padded = batch
+            mel_predict, mel_post_predict, gate_predict, alignments = model((text_padded.long(), input_lengths.long(), mel_padded.float(), output_lengths.long()))
 
-            loss, mel_loss, mel_post_loss = criterion(mel_predict, mel_post_predict, mel_padded)
+            loss, mel_loss, mel_post_loss, gate_loss = criterion(mel_predict, mel_post_predict, gate_predict, mel_padded, gate_padded)
 
             model.zero_grad()
             loss.backward()
@@ -84,8 +84,8 @@ def train(dataset_dir, log_dir, load_path=None):
 
             dur_time = time() - stime
             lr = optimizer.param_groups[0]['lr']
-            print('epoch : {}, iteration : {}, mel_loss : {:.8f}, mel_post_loss : {:.8f}, time : {:.1f}s/it (lr : {})'.format(
-                epoch + 1, iteration, mel_loss, mel_post_loss, dur_time, lr))
+            print('epoch : {}, iteration : {}, mel_loss : {:.8f}, mel_post_loss : {:.8f}, gate_loss : {:.8f}, time : {:.1f}s/it (lr : {})'.format(
+                epoch + 1, iteration, mel_loss, mel_post_loss, gate_loss, dur_time, lr))
 
             if iteration % save_iters == 0:
                 save_model(log_dir, model, optimizer, iteration)

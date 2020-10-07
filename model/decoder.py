@@ -31,6 +31,8 @@ class Decoder(nn.Module):
 
         self.linear_projection = LinearNorm(1024 + 512, 80 * 3)
 
+        self.gate_layer = LinearNorm(1024 + 512, 1, bias=True, w_init_gain='sigmoid')
+
 
     def get_go_frame(self, memory):
         batch_size = memory.size(0)
@@ -52,7 +54,12 @@ class Decoder(nn.Module):
         # print('decoder input transpose : ', decoder_inputs.size())
         return decoder_inputs
 
-    def parse_decoder_outputs(self, mel_outputs, alignments):
+    def parse_decoder_outputs(self, mel_outputs, alignments, gate_outputs):
+        # List[(B, 1)] -> [frames // 3, B, 1]
+        gate_outputs = torch.stack(gate_outputs)
+        gate_outputs = gate_outputs.transpose(0, 1).contiguous()
+        gate_outputs = gate_outputs.squeeze(-1)
+        # print(gate_outputs.size())
         # List[(B, Seq)] -> (Len, B, Seq)
         alignments = torch.stack(alignments)
         # print('alignments', alignments.size())
@@ -68,7 +75,7 @@ class Decoder(nn.Module):
         # print(mel_outputs.size())
         mel_outputs = mel_outputs.transpose(1, 2)
         # print(mel_outputs.size())
-        return mel_outputs, alignments
+        return mel_outputs, alignments, gate_outputs
 
     def initailze_decoder_states(self, memory, mask):
         batch_size = memory.size(0)
@@ -148,7 +155,8 @@ class Decoder(nn.Module):
 
         decoder_output = self.linear_projection(decoder_hidden_attention_context)
 
-        return decoder_output, self.attention_weights
+        gate_prediction = self.gate_layer(decoder_hidden_attention_context)
+        return decoder_output, self.attention_weights, gate_prediction
 
     def forward(self, memory, decoder_inputs, memory_lengths):
         # memory : (B, Seq_len, 512) --> encoder outputs
@@ -166,20 +174,21 @@ class Decoder(nn.Module):
         self.initailze_decoder_states(memory,
                                       mask=~get_mask_from_lengths(memory_lengths))
 
-        mel_outputs, alignments = [], []
+        mel_outputs, alignments, gate_outputs = [], [], []
 
         while len(mel_outputs) < decoder_inputs.size(0) - 1:
             decoder_input = decoder_inputs[len(mel_outputs)]
-            mel_output, attention_weights = self.decode(decoder_input)
+            mel_output, attention_weights, gate_output = self.decode(decoder_input)
             # mel_output : (1, B, 240)
             mel_outputs.append(mel_output)
             alignments.append(attention_weights)
+            gate_outputs.append(gate_output)
 
         # print('decoder prediction : ', len(mel_outputs))
 
-        mel_outputs, alignments = self.parse_decoder_outputs(mel_outputs, alignments)
+        mel_outputs, alignments, gate_outputs = self.parse_decoder_outputs(mel_outputs, alignments, gate_outputs)
         # print('mel outputs', mel_outputs.size())
-        return mel_outputs, alignments
+        return mel_outputs, alignments, gate_outputs
 
 
 

@@ -21,14 +21,19 @@ class Tacotron2(nn.Module):
         self.decoder = Decoder()
         self.postnet = PostNet()
 
-    def parse_outputs(self, mel_outputs, mel_outputs_postnet, output_lengths):
+    def parse_outputs(self, mel_outputs, mel_outputs_postnet, gate_outputs, output_lengths):
         mask = ~get_mask_from_lengths(output_lengths, pad=True)
         mask = mask.expand(80, mask.size(0), mask.size(1))
         mask = mask.permute(1, 0, 2)
+        # mask : (B, 80, Frames)
 
         mel_outputs.data.masked_fill_(mask, 0.0)
         mel_outputs_postnet.data.masked_fill_(mask, 0.0)
-        return mel_outputs, mel_outputs_postnet
+
+        # gate outputs : (B, Frames // 3)
+        slice_mask = torch.arange(0, mask.size(2), 3)
+        gate_outputs.data.masked_fill_(mask[:, 0, slice_mask], 1e3)
+        return mel_outputs, mel_outputs_postnet, gate_outputs
 
     def forward(self, inputs):
         text_inputs, input_lengths, mel_targets, output_lengths = inputs
@@ -44,14 +49,14 @@ class Tacotron2(nn.Module):
         encoder_outputs = self.encoder(character_embedding, input_lengths)
         # print('encoder output size : ', encoder_outputs.size())
 
-        mel_outputs, alignments = self.decoder(encoder_outputs,
+        mel_outputs, alignments, gate_outputs = self.decoder(encoder_outputs,
                                                mel_targets,
                                                input_lengths)
         mel_outputs_postnet = self.postnet(mel_outputs)
         mel_outputs_postnet = mel_outputs + mel_outputs_postnet
 
-        mel_outputs, mel_outputs_postnet = self.parse_outputs(mel_outputs, mel_outputs_postnet, output_lengths)
-        return mel_outputs, mel_outputs_postnet, alignments
+        mel_outputs, mel_outputs_postnet, gate_outputs = self.parse_outputs(mel_outputs, mel_outputs_postnet, gate_outputs, output_lengths)
+        return mel_outputs, mel_outputs_postnet, gate_outputs, alignments
 
 
 if __name__ == '__main__':
