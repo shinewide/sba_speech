@@ -39,7 +39,7 @@ def train(dataset_dir, log_dir, load_path=None):
     # init optimizer
     optimizer = torch.optim.Adam(model.parameters(), lr=0.05)
     epoch = 0
-    max_epoch = 100
+    max_epoch = 1
     iteration = 1
     save_iters = 100
 
@@ -73,7 +73,7 @@ def train(dataset_dir, log_dir, load_path=None):
         for batch in dataloader:
             stime = time()
             mel_padded, output_lengths, text_padded, input_lengths = batch
-            mel_predict = model((text_padded.long(), input_lengths.long(), mel_padded.float(), output_lengths.long()))
+            mel_predict, alignments = model((text_padded.long(), input_lengths.long(), mel_padded.float(), output_lengths.long()))
 
             loss, loss_item = criterion(mel_predict, mel_padded)
             total_loss += loss_item

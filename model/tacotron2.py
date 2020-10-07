@@ -7,6 +7,7 @@ from hparams import hparams as hps
 from math import sqrt
 from utils import get_mask_from_lengths
 
+
 class Tacotron2(nn.Module):
     def __init__(self):
         super(Tacotron2, self).__init__()
@@ -41,13 +42,17 @@ class Tacotron2(nn.Module):
         encoder_outputs = self.encoder(character_embedding, input_lengths)
         # print('encoder output size : ', encoder_outputs.size())
 
-        self.decoder(encoder_outputs, mel_targets, input_lengths)
+        mel_outputs, alignments = self.decoder(encoder_outputs,
+                                               mel_targets,
+                                               input_lengths)
 
-        # mel_outputs = self.parse_outputs(mel_outputs, output_lengths)
-        # return mel_outputs
+        mel_outputs = self.parse_outputs(mel_outputs,  output_lengths)
+        return mel_outputs, alignments
+
 
 if __name__ == '__main__':
     from feeder.speech_dataset import SpeechDataset, SpeechCollate
+
     dataset = SpeechDataset('../data/lj')
     collate_fn = SpeechCollate()
 
@@ -62,30 +67,3 @@ if __name__ == '__main__':
         mel_padded, output_lengths, text_padded, input_lengths = batch
         model((text_padded.long(), input_lengths.long(), mel_padded.float(), output_lengths.long()))
         break
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

@@ -52,7 +52,12 @@ class Decoder(nn.Module):
         # print('decoder input transpose : ', decoder_inputs.size())
         return decoder_inputs
 
-    def parse_decoder_outputs(self, mel_outputs):
+    def parse_decoder_outputs(self, mel_outputs, alignments):
+        # List[(B, Seq)] -> (Len, B, Seq)
+        alignments = torch.stack(alignments)
+        # print('alignments', alignments.size())
+        alignments = alignments.transpose(0, 1)
+        # print('alignments', alignments.size())
         # List[(B, 240) ....] -> (len(List) : 278, B, 240)
         mel_outputs = torch.stack(mel_outputs)
         # print(mel_outputs.size())
@@ -63,7 +68,7 @@ class Decoder(nn.Module):
         # print(mel_outputs.size())
         mel_outputs = mel_outputs.transpose(1, 2)
         # print(mel_outputs.size())
-        return mel_outputs
+        return mel_outputs, alignments
 
     def initailze_decoder_states(self, memory, mask):
         batch_size = memory.size(0)
@@ -168,13 +173,13 @@ class Decoder(nn.Module):
             mel_output, attention_weights = self.decode(decoder_input)
             # mel_output : (1, B, 240)
             mel_outputs.append(mel_output)
-            break
+            alignments.append(attention_weights)
 
         # print('decoder prediction : ', len(mel_outputs))
 
-        # mel_outputs = self.parse_decoder_outputs(mel_outputs)
-
-        # return mel_outputs
+        mel_outputs, alignments = self.parse_decoder_outputs(mel_outputs, alignments)
+        # print('mel outputs', mel_outputs.size())
+        return mel_outputs, alignments
 
 
 
