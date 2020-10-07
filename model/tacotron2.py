@@ -2,7 +2,7 @@ import torch
 from torch import nn
 from model.encoder import Encoder
 from model.decoder import Decoder
-# from model.modules import Postnet
+from model.modules import PostNet
 from hparams import hparams as hps
 from math import sqrt
 from utils import get_mask_from_lengths
@@ -19,14 +19,16 @@ class Tacotron2(nn.Module):
 
         self.encoder = Encoder()
         self.decoder = Decoder()
+        self.postnet = PostNet()
 
-    def parse_outputs(self, mel_outputs, output_lengths):
+    def parse_outputs(self, mel_outputs, mel_outputs_postnet, output_lengths):
         mask = ~get_mask_from_lengths(output_lengths, pad=True)
         mask = mask.expand(80, mask.size(0), mask.size(1))
         mask = mask.permute(1, 0, 2)
 
         mel_outputs.data.masked_fill_(mask, 0.0)
-        return mel_outputs
+        mel_outputs_postnet.data.masked_fill_(mask, 0.0)
+        return mel_outputs, mel_outputs_postnet
 
     def forward(self, inputs):
         text_inputs, input_lengths, mel_targets, output_lengths = inputs
@@ -45,9 +47,11 @@ class Tacotron2(nn.Module):
         mel_outputs, alignments = self.decoder(encoder_outputs,
                                                mel_targets,
                                                input_lengths)
+        mel_outputs_postnet = self.postnet(mel_outputs)
+        mel_outputs_postnet = mel_outputs + mel_outputs_postnet
 
-        mel_outputs = self.parse_outputs(mel_outputs,  output_lengths)
-        return mel_outputs, alignments
+        mel_outputs, mel_outputs_postnet = self.parse_outputs(mel_outputs, mel_outputs_postnet, output_lengths)
+        return mel_outputs, mel_outputs_postnet, alignments
 
 
 if __name__ == '__main__':

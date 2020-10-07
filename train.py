@@ -69,14 +69,14 @@ def train(dataset_dir, log_dir, load_path=None):
     model.train()
 
     while epoch < max_epoch:
-        total_loss = 0
+
         for batch in dataloader:
             stime = time()
             mel_padded, output_lengths, text_padded, input_lengths = batch
-            mel_predict, alignments = model((text_padded.long(), input_lengths.long(), mel_padded.float(), output_lengths.long()))
+            mel_predict, mel_post_predict, alignments = model((text_padded.long(), input_lengths.long(), mel_padded.float(), output_lengths.long()))
 
-            loss, loss_item = criterion(mel_predict, mel_padded)
-            total_loss += loss_item
+            loss, mel_loss, mel_post_loss = criterion(mel_predict, mel_post_predict, mel_padded)
+
             model.zero_grad()
             loss.backward()
             optimizer.step()
@@ -84,8 +84,8 @@ def train(dataset_dir, log_dir, load_path=None):
 
             dur_time = time() - stime
             lr = optimizer.param_groups[0]['lr']
-            print('epoch : {}, iteration : {}, loss : {:.8f}, time : {:.1f}s/it (lr : {})'.format(epoch + 1, iteration, loss_item,
-                                                                                        dur_time, lr))
+            print('epoch : {}, iteration : {}, mel_loss : {:.8f}, mel_post_loss : {:.8f}, time : {:.1f}s/it (lr : {})'.format(
+                epoch + 1, iteration, mel_loss, mel_post_loss, dur_time, lr))
 
             if iteration % save_iters == 0:
                 save_model(log_dir, model, optimizer, iteration)

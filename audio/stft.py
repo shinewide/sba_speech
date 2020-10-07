@@ -198,7 +198,7 @@ if __name__ == '__main__':
     wav = wav.unsqueeze(0)
 
     mel_spec = taco_stft.mel_spectrogram(wav)
-    print(mel_spec.size())
+    # print(mel_spec.size())
 
     # # stft = STFT()
     #

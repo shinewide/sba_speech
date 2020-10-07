@@ -66,13 +66,13 @@ class LocationLayer(nn.Module):
     def forward(self, attention_weights_cat):
         # input : (B, 2, Seq_Len)
         processed_attention = self.location_conv(attention_weights_cat)
-        print(processed_attention.size())
+        # print(processed_attention.size())
         # processed attention : (B, 32, Seq_Len)
         processed_attention = processed_attention.transpose(1, 2)
         # (B, Seq_len, 32)
         processed_attention = self.location_dense(processed_attention)
         # (B, Seq_Len, 128)
-        print(processed_attention.size())
+        # print(processed_attention.size())
         return processed_attention
 
 
