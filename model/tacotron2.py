@@ -58,6 +58,16 @@ class Tacotron2(nn.Module):
         mel_outputs, mel_outputs_postnet, gate_outputs = self.parse_outputs(mel_outputs, mel_outputs_postnet, gate_outputs, output_lengths)
         return mel_outputs, mel_outputs_postnet, gate_outputs, alignments
 
+    def inference(self, inputs):
+        embedded_inputs = self.embedding(inputs).transpose(1, 2)
+        encoder_outputs = self.encoder.inference(embedded_inputs)
+        mel_outputs, alignments, gate_outputs = self.decoder.inference(
+            encoder_outputs)
+
+        mel_outputs_postnet = self.postnet(mel_outputs)
+        mel_outputs_postnet = mel_outputs + mel_outputs_postnet
+
+        return mel_outputs, mel_outputs_postnet, alignments
 
 if __name__ == '__main__':
     from feeder.speech_dataset import SpeechDataset, SpeechCollate

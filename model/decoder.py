@@ -190,6 +190,34 @@ class Decoder(nn.Module):
         # print('mel outputs', mel_outputs.size())
         return mel_outputs, alignments, gate_outputs
 
+    def inference(self, memory):
+        decoder_input = self.get_go_frame(memory)
+
+        self.initailze_decoder_states(memory, mask=None)
+
+        mel_outputs, gate_outputs, alignments = [], [], []
+
+        while True:
+            decoder_input = self.prenet(decoder_input)
+            mel_output, attention_weights, gate_output = self.decode(decoder_input)
+
+            mel_outputs.append(mel_output)
+            alignments.append(attention_weights)
+            gate_outputs.append(gate_output)
+
+            if torch.sigmoid(gate_output.data) > 0.6:
+                break
+
+            elif len(mel_outputs) == 6000:
+                print('stop token is not working')
+                break
+
+            decoder_input = mel_output
+
+        mel_outputs, alignments, gate_outputs = self.parse_decoder_outputs(mel_outputs, alignments, gate_outputs)
+
+        return mel_outputs, alignments, gate_outputs
+
 
 
 
