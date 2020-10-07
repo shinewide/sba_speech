@@ -29,7 +29,7 @@ class Decoder(nn.Module):
         # decoder rnn output : 1024
         self.decoder_rnn = nn.LSTMCell(1024 + 512, 1024, 1)
 
-        self.linear_projection = LinearNorm(1024 + 512, 80 * 3)
+        self.linear_projection = LinearNorm(1024 + 512, 80 * hps.n_frames_per_step)
 
         self.gate_layer = LinearNorm(1024 + 512, 1, bias=True, w_init_gain='sigmoid')
 

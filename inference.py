@@ -11,7 +11,11 @@ from text import text_to_sequence
 if __name__ == '__main__':
     model = Tacotron2()
 
-    ckpt_dict = torch.load
+    ckpt_dict = torch.load('./pretrained/tacotron2_statedict.pt',
+                           map_location=torch.device('cpu'))
+
+    model.load_state_dict(ckpt_dict['state_dict'])
+    print('success load model')
 
 
 
