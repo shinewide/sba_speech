@@ -1,10 +1,11 @@
 import re
 from text import cleaners
-from text.symbols import symbols
+# from text.symbols import symbols
+from text.symbols import korean_symbol
 
 # Mappings from symbol to numeric ID and vice versa:
-_symbol_to_id = {s: i for i, s in enumerate(symbols)}
-_id_to_symbol = {i: s for i, s in enumerate(symbols)}
+_symbol_to_id = {s: i for i, s in enumerate(korean_symbol)}
+_id_to_symbol = {i: s for i, s in enumerate(korean_symbol)}
 
 # Regular expression matching text enclosed in curly braces:
 _curly_re = re.compile(r'(.*?)\{(.+?)\}(.*)')
@@ -67,3 +68,30 @@ def _arpabet_to_sequence(text):
 
 def _should_keep_symbol(s):
     return s in _symbol_to_id and s is not '_' and s is not '~'
+
+
+if __name__ == '__main__':
+    text = '오늘은 10월 8일 입니다.'
+
+    t2s = text_to_sequence(text, ['korean_cleaners'])
+
+    print(t2s)
+
+    s2t = sequence_to_text(t2s)
+
+    print(s2t)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

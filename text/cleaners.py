@@ -15,6 +15,7 @@ hyperparameter. Some cleaners are English-specific. You'll typically want to use
 import re
 from unidecode import unidecode
 from .numbers import normalize_numbers
+from jamo import hangul_to_jamo
 
 # Regular expression matching whitespace:
 _whitespace_re = re.compile(r'\s+')
@@ -87,3 +88,25 @@ def english_cleaners(text):
     text = expand_abbreviations(text)
     text = collapse_whitespace(text)
     return text
+
+def korean_to_jamo(text):
+    return "".join(hangul_to_jamo(text))
+
+def korean_cleaners(text):
+    text = korean_to_jamo(text)
+    # do something
+    return text
+
+
+
+
+
+
+
+
+
+
+
+
+
+
