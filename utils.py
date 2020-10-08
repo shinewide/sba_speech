@@ -16,7 +16,8 @@ def get_mask_from_lengths(lengths, pad=False):
     if pad and max_len % 1 != 0:
         max_len += 1 - max_len % 1
 
-    ids = torch.arange(0, max_len, out=torch.LongTensor(max_len), device=lengths.device)
+    ids = torch.arange(0, max_len, out=torch.LongTensor(max_len))
+    ids = ids.cuda()
     mask = (ids < lengths.unsqueeze(1)).bool()
     return mask
 
