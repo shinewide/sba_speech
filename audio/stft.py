@@ -6,8 +6,9 @@ from torch.autograd import Variable
 from librosa.filters import mel as librosa_mel_fn
 from scipy.signal import get_window
 from librosa.util import pad_center, tiny
-from audio.utils import dynamic_range_compression
+from audio.utils import dynamic_range_compression, dynamic_range_decompression, window_sumsquare
 from hparams import hparams as hps
+
 
 class TacotronSTFT(nn.Module):
     def __init__(self):
@@ -47,22 +48,9 @@ class TacotronSTFT(nn.Module):
         log_mel_spectrogram = dynamic_range_compression(mel_spectrogram)
         return log_mel_spectrogram
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+    def spectral_de_normalize(self, mel_spectrogram):
+        mel_spectrogram = dynamic_range_decompression(mel_spectrogram)
+        return mel_spectrogram
 
 
 class STFT(nn.Module):
@@ -112,7 +100,7 @@ class STFT(nn.Module):
         input_data = F.pad(input_data.unsqueeze(1),
                            (int(self.filter_length / 2), int(self.filter_length / 2),
                             0, 0),
-                            mode='reflect')
+                           mode='reflect')
 
         input_data = input_data.squeeze(1)
 
@@ -169,28 +157,11 @@ class STFT(nn.Module):
         return reconstruction
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 if __name__ == '__main__':
     taco_stft = TacotronSTFT()
     audio_path = '../data/lj/wavs/LJ001-0002.wav'
     import librosa
+
     wav, sr = librosa.core.load(audio_path, sr=22050)
     assert (sr == 22050)
     wav = torch.from_numpy(wav).float()
@@ -221,51 +192,5 @@ if __name__ == '__main__':
     #
     # print(mel_spectrogram.size())
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 if __name__ == '__main__':
     stft = STFT()
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
