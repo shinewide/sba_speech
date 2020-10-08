@@ -109,9 +109,9 @@ def train(dataset_dir, log_dir, load_path=None, device='cpu'):
 
             if iteration % save_iters == 0:
                 save_model(log_dir, model, optimizer, iteration)
-                mel_output = mel_predict[0].detach().numpy().astype(np.float32)
-                mel_target = mel_padded[0].detach().numpy().astype(np.float32)
-                alignment = alignments[0].detach().numpy().astype(np.float32).T
+                mel_output = mel_predict[0].cpu().detach().numpy().astype(np.float32)
+                mel_target = mel_padded[0].cpu().detach().numpy().astype(np.float32)
+                alignment = alignments[0].cpu().detach().numpy().astype(np.float32).T
                 png_path = os.path.join(log_dir, 'mel_{}.png'.format(iteration))
                 save_png((mel_output, mel_target, alignment), png_path)
 
@@ -122,7 +122,7 @@ def train(dataset_dir, log_dir, load_path=None, device='cpu'):
 if __name__ == '__main__':
     dataset_dir = './data/lj'
     log_dir = './logs'
-    load_path = './pretrained/tacotron2_statedict.pt'
-    device = 'cpu' # gpu, cpu
+    load_path = None
+    device = 'gpu'  # gpu, cpu
 
     train(dataset_dir, log_dir, load_path, device)
