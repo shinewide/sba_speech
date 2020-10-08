@@ -8,7 +8,7 @@ class Tacotron2Loss(nn.Module):
     def forward(self, mel_predict, mel_post_predict, gate_predict, mel_target, gate_target):
         mel_target.required_grad = False
         gate_target.required_grad = False
-        slice_arange = torch.arange(0, gate_target.size(1), 3)
+        slice_arange = torch.arange(0, gate_target.size(1), 1)
         gate_target = gate_target[:, slice_arange]
 
         gate_predict = gate_predict.view(-1, 1)

@@ -6,8 +6,18 @@ from feeder.speech_dataset import SpeechDataset, SpeechCollate
 from model.tacotron2 import Tacotron2
 from model.loss import Tacotron2Loss
 from time import time
-from utils import save_png
+from utils import save_png, mode
 
+
+def parse_batch(batch, use_gpu):
+    mel_padded, output_lengths, text_padded, input_lengths, gate_padded = batch
+    mel_padded = mode(mel_padded, use_gpu=use_gpu)
+    output_lengths = mode(output_lengths, use_gpu=use_gpu)
+    text_padded = mode(text_padded, use_gpu=use_gpu)
+    input_lengths = mode(input_lengths, use_gpu=use_gpu)
+    gate_padded = mode(gate_padded, use_gpu=use_gpu)
+    return (mel_padded, output_lengths, text_padded,
+            input_lengths, gate_padded)
 
 def save_model(save_dir, model, optimizer, iteration):
     save_filename = 'tacotron2_ckpt_{}'.format(iteration)
@@ -29,9 +39,18 @@ def load_model(ckpt_path, model, optimizer):
     return model, optimizer, iteration
 
 
-def train(dataset_dir, log_dir, load_path=None):
+def train(dataset_dir, log_dir, load_path=None, device='cpu'):
+    use_gpu = True if device == 'gpu' else False
+
     # init Tacotron2
     model = Tacotron2()
+    mode(model, use_gpu=use_gpu)
+
+    # nvidia tacotron weight append
+    nvidia_ckpt_dict = torch.load(load_path,
+                                  map_location=torch.device('cpu'))
+    model.load_state_dict(nvidia_ckpt_dict['state_dict'])
+    load_path = None
 
     # init loss fn
     criterion = Tacotron2Loss()
@@ -43,8 +62,8 @@ def train(dataset_dir, log_dir, load_path=None):
     iteration = 1
     save_iters = 1
 
-    if load_path is not None:
-        model, optimizer, iteration = load_model(load_path, model, optimizer)
+    # if load_path is not None:
+    #     model, optimizer, iteration = load_model(load_path, model, optimizer)
 
     # init lr scheduler
     lr_lambda = lambda step: 4000 ** 0.5 * min((step + 1) * 4000 ** -1.5, (step + 1) ** -0.5)
@@ -72,6 +91,7 @@ def train(dataset_dir, log_dir, load_path=None):
 
         for batch in dataloader:
             stime = time()
+            batch = parse_batch(batch, use_gpu)
             mel_padded, output_lengths, text_padded, input_lengths, gate_padded = batch
             mel_predict, mel_post_predict, gate_predict, alignments = model((text_padded.long(), input_lengths.long(), mel_padded.float(), output_lengths.long()))
 
@@ -102,6 +122,7 @@ def train(dataset_dir, log_dir, load_path=None):
 if __name__ == '__main__':
     dataset_dir = './data/lj'
     log_dir = './logs'
-    load_path = './logs/tacotron2_ckpt_5'
+    load_path = './pretrained/tacotron2_statedict.pt'
+    device = 'cpu' # gpu, cpu
 
-    train(dataset_dir, log_dir, None)
+    train(dataset_dir, log_dir, load_path, device)

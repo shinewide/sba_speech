@@ -31,7 +31,7 @@ class Tacotron2(nn.Module):
         mel_outputs_postnet.data.masked_fill_(mask, 0.0)
 
         # gate outputs : (B, Frames // 3)
-        slice_mask = torch.arange(0, mask.size(2), 3)
+        slice_mask = torch.arange(0, mask.size(2), 1)
         gate_outputs.data.masked_fill_(mask[:, 0, slice_mask], 1e3)
         return mel_outputs, mel_outputs_postnet, gate_outputs
 
