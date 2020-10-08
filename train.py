@@ -47,10 +47,10 @@ def train(dataset_dir, log_dir, load_path=None, device='cpu'):
     mode(model, use_gpu=use_gpu)
 
     # nvidia tacotron weight append
-    nvidia_ckpt_dict = torch.load(load_path,
-                                  map_location=torch.device('cpu'))
-    model.load_state_dict(nvidia_ckpt_dict['state_dict'])
-    load_path = None
+    # nvidia_ckpt_dict = torch.load(load_path,
+    #                               map_location=torch.device('cpu'))
+    # model.load_state_dict(nvidia_ckpt_dict['state_dict'])
+    # load_path = None
 
     # init loss fn
     criterion = Tacotron2Loss()
